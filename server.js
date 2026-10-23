@@ -90,18 +90,24 @@ const PORT = process.env.PORT || 5000;
 const fs = require('fs');
 const util = require('util');
 
-// Create a write stream (in append mode) for logging
-const logFile = fs.createWriteStream(path.join(__dirname, 'server_debug.log'), { flags: 'a' });
-const logStdout = process.stdout;
+// Create a write stream (in append mode) for logging when not on Vercel
+if (!process.env.VERCEL) {
+    try {
+        const logFile = fs.createWriteStream(path.join(__dirname, 'server_debug.log'), { flags: 'a' });
+        const logStdout = process.stdout;
 
-console.log = function () {
-    logFile.write(util.format.apply(null, arguments) + '\n');
-    logStdout.write(util.format.apply(null, arguments) + '\n');
-};
-console.error = function () {
-    logFile.write(util.format.apply(null, arguments) + '\n');
-    logStdout.write(util.format.apply(null, arguments) + '\n');
-};
+        console.log = function () {
+            logFile.write(util.format.apply(null, arguments) + '\n');
+            logStdout.write(util.format.apply(null, arguments) + '\n');
+        };
+        console.error = function () {
+            logFile.write(util.format.apply(null, arguments) + '\n');
+            logStdout.write(util.format.apply(null, arguments) + '\n');
+        };
+    } catch (err) {
+        // Fallback to console
+    }
+}
 
 console.log('--- Server Starting ---');
 console.log('Current directory:', __dirname);
@@ -140,9 +146,11 @@ app.get(/^(?!\/api).*/, (req, res) => {
     }
 });
 
-server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+    server.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+}
 
 const rooms = {};
 
@@ -231,3 +239,5 @@ io.on('connection', (socket) => {
         }
     });
 });
+
+module.exports = app;
