@@ -155,10 +155,12 @@ if (!process.env.VERCEL) {
 const rooms = {};
 
 // LiveKit Webhook Handler
-const receiver = new WebhookReceiver(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
-
 app.post('/api/livekit/webhook', async (req, res) => {
     try {
+        if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
+            return res.status(200).send('LiveKit webhook ignored (keys not configured)');
+        }
+        const receiver = new WebhookReceiver(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
         const bodyStr = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
         const event = receiver.receive(bodyStr, req.get('Authorization'));
         console.log('LiveKit Event:', event.event, event.room?.name);

@@ -3,12 +3,22 @@ const router = express.Router();
 const { AccessToken, RoomServiceClient } = require('livekit-server-sdk');
 const auth = require('../middleware/auth');
 
-// Initialize RoomServiceClient
-const roomService = new RoomServiceClient(
-    process.env.LIVEKIT_URL,
-    process.env.LIVEKIT_API_KEY,
-    process.env.LIVEKIT_API_SECRET
-);
+// Helper to safely get RoomServiceClient
+const getRoomService = () => {
+    if (process.env.LIVEKIT_URL && process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET) {
+        try {
+            return new RoomServiceClient(
+                process.env.LIVEKIT_URL,
+                process.env.LIVEKIT_API_KEY,
+                process.env.LIVEKIT_API_SECRET
+            );
+        } catch (e) {
+            console.warn('RoomServiceClient creation error:', e.message);
+            return null;
+        }
+    }
+    return null;
+};
 
 router.post('/create-room', auth, async (req, res) => {
     try {
@@ -16,6 +26,11 @@ router.post('/create-room', auth, async (req, res) => {
 
         if (!name) {
             return res.status(400).json({ message: 'Room name is required' });
+        }
+
+        const roomService = getRoomService();
+        if (!roomService) {
+            return res.status(500).json({ message: 'LiveKit is not configured with API keys.' });
         }
 
         const roomOptions = {
@@ -41,6 +56,10 @@ router.post('/create-room', auth, async (req, res) => {
 
 router.get('/list-rooms', auth, async (req, res) => {
     try {
+        const roomService = getRoomService();
+        if (!roomService) {
+            return res.json({ rooms: [] });
+        }
         const rooms = await roomService.listRooms();
         const roomsList = rooms.map(room => ({
             name: room.name,
@@ -59,6 +78,11 @@ router.delete('/delete-room', auth, async (req, res) => {
         const { room } = req.query;
         if (!room) {
             return res.status(400).json({ message: 'Room name is required' });
+        }
+
+        const roomService = getRoomService();
+        if (!roomService) {
+            return res.status(500).json({ message: 'LiveKit is not configured with API keys.' });
         }
 
         await roomService.deleteRoom(room);
