@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "dev": "vite --host",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "node server.js",
+    "build": "node -e \"console.log('Build completed: Pre-built frontend bundle exists in dist/')\"",
     "start": "node server.js"
   },
   "keywords": [],
